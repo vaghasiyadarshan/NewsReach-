@@ -1,7 +1,7 @@
 import type { Exclusion } from '../../../domain/models/schedule.ts';
 import type { Candidate } from './feasibility.ts';
 import type { SubsetPlacer } from './placement.ts';
-import { closureMask, type Subset } from './subsets.ts';
+import { maskWithDependencies, type Subset } from './subsets.ts';
 
 interface ExplainContext {
   candidates: readonly Candidate[];
@@ -18,7 +18,7 @@ interface ExplainContext {
  * heuristic: it finds the best schedule that would have to include the job and reports what that
  * would cost compared with the chosen optimum.
  */
-export function explainUnselected(ctx: ExplainContext): Exclusion[] {
+export function explainExcludedJobs(ctx: ExplainContext): Exclusion[] {
   const { candidates, dependencyMasks, subsets, placer, chosen } = ctx;
   const exclusions: Exclusion[] = [];
 
@@ -26,8 +26,8 @@ export function explainUnselected(ctx: ExplainContext): Exclusion[] {
     if (chosen.mask & (1 << index)) return;
     const jobId = candidate.job.id;
 
-    const required = closureMask(index, dependencyMasks);
-    if (placer.place(required) === null) {
+    const required = maskWithDependencies(index, dependencyMasks);
+    if (placer.placeJobs(required) === null) {
       exclusions.push({
         jobId,
         code: 'WINDOW_TOO_SMALL',
@@ -37,14 +37,14 @@ export function explainUnselected(ctx: ExplainContext): Exclusion[] {
       return;
     }
 
-    const forced = subsets.find((s) => (s.mask & required) === required && placer.place(s.mask) !== null)!;
-    exclusions.push({ jobId, code: 'DISPLACED', reason: displacedReason(forced, chosen) });
+    const forced = subsets.find((s) => (s.mask & required) === required && placer.placeJobs(s.mask) !== null)!;
+    exclusions.push({ jobId, code: 'DISPLACED', reason: explainDisplacement(forced, chosen) });
   });
 
   return exclusions;
 }
 
-function displacedReason(forced: Subset, chosen: Subset): string {
+function explainDisplacement(forced: Subset, chosen: Subset): string {
   if (forced.priority < chosen.priority) {
     return `Including it would lower the total priority from ${chosen.priority} to ${forced.priority}.`;
   }

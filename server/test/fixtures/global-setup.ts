@@ -1,5 +1,5 @@
 import pg from 'pg';
-import { migrate } from '../../src/infrastructure/orm/migrate.ts';
+import { runMigrations } from '../../src/infrastructure/orm/migrate.ts';
 import { createPool } from '../../src/infrastructure/orm/pool.ts';
 import { TEST_DATABASE_URL } from './db.ts';
 
@@ -23,7 +23,7 @@ export default async function setup(): Promise<void> {
   await ensureTestDatabase();
   const pool = createPool(TEST_DATABASE_URL);
   try {
-    await migrate(pool);
+    await runMigrations(pool);
   } finally {
     await pool.end();
   }

@@ -19,11 +19,11 @@ export class PostgresJobRepository implements JobRepository {
   constructor(private readonly q: Queryable) {}
 
   async list(): Promise<Job[]> {
-    return this.load(null);
+    return this.loadJobs(null);
   }
 
   async findById(id: string): Promise<Job | null> {
-    return (await this.load([id]))[0] ?? null;
+    return (await this.loadJobs([id]))[0] ?? null;
   }
 
   async insert(job: Job): Promise<void> {
@@ -33,9 +33,9 @@ export class PostgresJobRepository implements JobRepository {
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb)`,
         [job.id, job.name, job.operationType, job.duration, job.releaseTime, job.deadline, job.priority, JSON.stringify(job.inputData)],
       );
-      await this.writeRelations(job);
+      await this.saveMachinesAndDependencies(job);
     } catch (error) {
-      throw this.translate(error, job.id);
+      throw this.toDomainError(error, job.id);
     }
   }
 
@@ -50,13 +50,13 @@ export class PostgresJobRepository implements JobRepository {
       );
       await this.q.query('DELETE FROM job_eligible_machines WHERE job_id = $1', [job.id]);
       await this.q.query('DELETE FROM job_dependencies WHERE job_id = $1', [job.id]);
-      await this.writeRelations(job);
+      await this.saveMachinesAndDependencies(job);
     } catch (error) {
-      throw this.translate(error, job.id);
+      throw this.toDomainError(error, job.id);
     }
   }
 
-  private async writeRelations(job: Job): Promise<void> {
+  private async saveMachinesAndDependencies(job: Job): Promise<void> {
     await this.q.query(
       'INSERT INTO job_eligible_machines (job_id, machine_id) SELECT $1, unnest($2::text[])',
       [job.id, job.eligibleMachines],
@@ -70,7 +70,7 @@ export class PostgresJobRepository implements JobRepository {
   }
 
   /** Loads jobs (all, or just `ids`) with their eligible machines and dependencies. */
-  private async load(ids: string[] | null): Promise<Job[]> {
+  private async loadJobs(ids: string[] | null): Promise<Job[]> {
     const jobs = await this.q.query<JobRow>(
       `SELECT id, name, operation_type, duration, release_time, deadline, priority, input_data
          FROM jobs WHERE ($1::text[] IS NULL OR id = ANY($1)) ORDER BY id COLLATE "C"`,
@@ -109,7 +109,7 @@ export class PostgresJobRepository implements JobRepository {
     }));
   }
 
-  private translate(error: unknown, jobId: string): unknown {
+  private toDomainError(error: unknown, jobId: string): unknown {
     if (isUniqueViolation(error)) return new ConflictError(`Job ${jobId} already exists`);
     if (isForeignKeyViolation(error)) return new ConflictError('A referenced machine or job no longer exists');
     return error;

@@ -8,7 +8,7 @@ export interface Subset {
 }
 
 /** Every dependency-closed subset of the candidates, best first by (priority, count). */
-export function enumerateClosedSubsets(
+export function listDependencyClosedSubsets(
   candidates: readonly Candidate[],
   dependencyMasks: readonly number[],
 ): Subset[] {
@@ -30,7 +30,7 @@ export function enumerateClosedSubsets(
 }
 
 /** The smallest dependency-closed subset containing candidate `index`: itself plus all its dependencies. */
-export function closureMask(index: number, dependencyMasks: readonly number[]): number {
+export function maskWithDependencies(index: number, dependencyMasks: readonly number[]): number {
   let mask = 1 << index;
   for (let grew = true; grew; ) {
     grew = false;

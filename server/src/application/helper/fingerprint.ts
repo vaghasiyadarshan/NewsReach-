@@ -17,7 +17,7 @@ function canonicalJson(value: unknown): string {
 
 const byId = <T extends { id: string }>(a: T, b: T): number => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 
-export function snapshotOf(jobs: readonly Job[], machines: readonly Machine[]): ScheduleInputSnapshot {
+export function buildSnapshot(jobs: readonly Job[], machines: readonly Machine[]): ScheduleInputSnapshot {
   return { jobs: [...jobs].sort(byId), machines: [...machines].sort(byId) };
 }
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Job } from '../../../../../src/domain/models/job.ts';
 import type { Machine } from '../../../../../src/domain/models/machine.ts';
-import { solve } from '../../../../../src/application/helper/scheduling/solver.ts';
+import { findOptimalSchedule } from '../../../../../src/application/helper/scheduling/solver.ts';
 import { job, machine, M1, M2 } from '../../../../fixtures/fixtures.ts';
 import { bruteForceSchedule } from '../../../../fixtures/oracle.ts';
 import { expectValidSchedule } from '../../../../fixtures/validity.ts';
@@ -58,7 +58,7 @@ describe('solver vs brute-force oracle (differential)', () => {
     for (let seed = 1; seed <= 200; seed++) {
       const { jobs, machines } = randomInstance(seed, horizon);
       const expected = bruteForceSchedule(jobs, machines, horizon);
-      const actual = solve({ jobs, machines, horizon });
+      const actual = findOptimalSchedule({ jobs, machines, horizon });
 
       const scheduledIds = new Set(actual.assignments.map((a) => a.jobId));
       if (jobs.some((j) => j.dependencies.length > 0 && scheduledIds.has(j.id))) coverage.dependencyScheduled++;
@@ -93,7 +93,7 @@ describe('solver stress (8 jobs, 3 machines, 12 slots)', () => {
       job(`J${i + 1}`, { duration: 5, priority: 5, eligibleMachines: all }),
     );
     const started = performance.now();
-    const result = solve({ jobs, machines });
+    const result = findOptimalSchedule({ jobs, machines });
     expect(performance.now() - started).toBeLessThan(1000);
     expect(result.scheduledCount).toBe(6);
     expectValidSchedule(jobs, machines, result);
@@ -111,7 +111,7 @@ describe('solver stress (8 jobs, 3 machines, 12 slots)', () => {
       job('J8', { duration: 3, deadline: 12, priority: 3, eligibleMachines: all }),
     ];
     const started = performance.now();
-    const result = solve({ jobs, machines });
+    const result = findOptimalSchedule({ jobs, machines });
     expect(performance.now() - started).toBeLessThan(1000);
     expectValidSchedule(jobs, machines, result);
   });
@@ -121,7 +121,7 @@ describe('solver stress (8 jobs, 3 machines, 12 slots)', () => {
       job(`J${i + 1}`, { duration: 2 + (i % 2), priority: 5, eligibleMachines: ['M1'], deadline: 12 }),
     );
     const started = performance.now();
-    const result = solve({ jobs, machines });
+    const result = findOptimalSchedule({ jobs, machines });
     expect(performance.now() - started).toBeLessThan(1000);
     expectValidSchedule(jobs, machines, result);
   });

@@ -20,7 +20,7 @@ export function findMissingReferences(jobs: readonly GraphNode[]): string[] {
  * Returns the path closed on its start, e.g. ['J1', 'J2', 'J1'], or null.
  * Unknown references are ignored (check them with findMissingReferences).
  */
-export function findCycle(jobs: readonly GraphNode[]): string[] | null {
+export function findDependencyCycle(jobs: readonly GraphNode[]): string[] | null {
   const byId = new Map(jobs.map((j) => [j.id, j] as const));
   const state = new Map<string, 'visiting' | 'done'>();
   const stack: string[] = [];
@@ -53,12 +53,12 @@ export function findCycle(jobs: readonly GraphNode[]): string[] | null {
 export function assertValidGraph(jobs: readonly GraphNode[]): void {
   const missing = findMissingReferences(jobs);
   if (missing.length > 0) throw new MissingReferenceError('dependency', missing);
-  const cycle = findCycle(jobs);
+  const cycle = findDependencyCycle(jobs);
   if (cycle) throw new GraphError(cycle);
 }
 
 /** Job IDs ordered so every job comes after its dependencies (deterministic; graph must be a DAG). */
-export function topologicalOrder(jobs: readonly GraphNode[]): string[] {
+export function orderByDependencies(jobs: readonly GraphNode[]): string[] {
   const byId = new Map(jobs.map((j) => [j.id, j] as const));
   const seen = new Set<string>();
   const order: string[] = [];
@@ -77,7 +77,7 @@ export function topologicalOrder(jobs: readonly GraphNode[]): string[] {
 }
 
 /** All jobs that `jobId` depends on, directly or indirectly (excluding itself). */
-export function transitiveDependencies(jobId: string, jobs: readonly GraphNode[]): Set<string> {
+export function findAllDependencies(jobId: string, jobs: readonly GraphNode[]): Set<string> {
   const byId = new Map(jobs.map((j) => [j.id, j] as const));
   const seen = new Set<string>();
   const walk = (id: string): void => {
@@ -92,8 +92,8 @@ export function transitiveDependencies(jobId: string, jobs: readonly GraphNode[]
 }
 
 /** All jobs that depend on `jobId`, directly or indirectly (excluding itself). */
-export function transitiveDependents(jobId: string, jobs: readonly GraphNode[]): Set<string> {
+export function findAllDependents(jobId: string, jobs: readonly GraphNode[]): Set<string> {
   return new Set(
-    jobs.filter((j) => j.id !== jobId && transitiveDependencies(j.id, jobs).has(jobId)).map((j) => j.id),
+    jobs.filter((j) => j.id !== jobId && findAllDependencies(j.id, jobs).has(jobId)).map((j) => j.id),
   );
 }

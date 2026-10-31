@@ -118,7 +118,7 @@ export class InMemoryStore {
       addLog: async (executionId: number, entry: LogEntry) => {
         this.logs.push({ id: this.nextLogId++, executionId, ...entry });
       },
-      logs: async (executionId) => this.logs.filter((l) => l.executionId === executionId).map((l) => ({ ...l })),
+      listLogs: async (executionId) => this.logs.filter((l) => l.executionId === executionId).map((l) => ({ ...l })),
     },
 
     devData: {

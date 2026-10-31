@@ -83,18 +83,18 @@ export class SubsetPlacer {
   }
 
   /** Best placement of exactly the jobs in `mask`, or null when they cannot all be scheduled. */
-  place(mask: number): Placement | null {
+  placeJobs(mask: number): Placement | null {
     const cached = this.cache.get(mask);
     if (cached !== undefined) return cached;
 
     // Infeasibility is monotone: if a subset cannot be scheduled, no superset can.
-    const result = this.infeasible.some((f) => (f & mask) === f) ? null : this.solve(mask);
+    const result = this.infeasible.some((f) => (f & mask) === f) ? null : this.findBestPlacement(mask);
     if (result === null) this.infeasible.push(mask);
     this.cache.set(mask, result);
     return result;
   }
 
-  private solve(mask: number): Placement | null {
+  private findBestPlacement(mask: number): Placement | null {
     const members: number[] = [];
     for (let i = 0; i < this.n; i++) if (mask & (1 << i)) members.push(i);
     if (members.length === 0) return { assignments: [], makespan: 0 };
@@ -107,7 +107,7 @@ export class SubsetPlacer {
     );
 
     for (let cap = lowerBound; cap <= this.horizon; cap++) {
-      const placed = this.search(members, cap);
+      const placed = this.searchPlacement(members, cap);
       if (placed) {
         const assignments = members.map((i): Assignment => {
           const p = placed[i]!;
@@ -120,7 +120,7 @@ export class SubsetPlacer {
   }
 
   /** Depth-first search for a complete placement finishing by `cap`; returns the placed state or null. */
-  private search(members: readonly number[], cap: number): PlacedJob[] | null {
+  private searchPlacement(members: readonly number[], cap: number): PlacedJob[] | null {
     const placed: Array<PlacedJob | undefined> = new Array(this.n).fill(undefined);
     const failed = new Set<string>();
 

@@ -2,7 +2,7 @@ import type { Job } from '../../../domain/models/job.ts';
 import type { Machine } from '../../../domain/models/machine.ts';
 import type { Exclusion } from '../../../domain/models/schedule.ts';
 import { compareStrings } from './compare.ts';
-import { topologicalOrder } from './graph.ts';
+import { orderByDependencies } from './graph.ts';
 
 /** A job that survived the pre-checks and may take part in the search. */
 export interface Candidate {
@@ -20,7 +20,7 @@ export interface FeasibilityResult {
   exclusions: Exclusion[];
 }
 
-function windowReason(finish: number, limit: number, job: Job, horizon: number, afterDeps: boolean): string {
+function explainWindowTooSmall(finish: number, limit: number, job: Job, horizon: number, afterDeps: boolean): string {
   const bound =
     job.deadline > horizon
       ? `slot ${limit} (the planning horizon; deadline is ${job.deadline})`
@@ -45,7 +45,7 @@ export function analyzeFeasibility(
   const excluded = new Map<string, Exclusion>();
   const candidates = new Map<string, Candidate>();
 
-  for (const id of topologicalOrder(jobs)) {
+  for (const id of orderByDependencies(jobs)) {
     const job = byId.get(id)!;
     const limit = Math.min(job.deadline, horizon);
 
@@ -65,7 +65,7 @@ export function analyzeFeasibility(
       excluded.set(id, {
         jobId: id,
         code: 'WINDOW_TOO_SMALL',
-        reason: windowReason(ownFinish, limit, job, horizon, false),
+        reason: explainWindowTooSmall(ownFinish, limit, job, horizon, false),
       });
       continue;
     }
@@ -92,7 +92,7 @@ export function analyzeFeasibility(
       excluded.set(id, {
         jobId: id,
         code: 'WINDOW_TOO_SMALL',
-        reason: windowReason(chainFinish, limit, job, horizon, true),
+        reason: explainWindowTooSmall(chainFinish, limit, job, horizon, true),
       });
       continue;
     }

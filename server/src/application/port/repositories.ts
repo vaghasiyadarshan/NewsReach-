@@ -64,7 +64,7 @@ export interface ExecutionRepository {
   transition(id: number, from: ExecutionStatus, to: ExecutionStatus, patch?: ExecutionPatch): Promise<Execution>;
   addLog(executionId: number, entry: LogEntry): Promise<void>;
   /** Ordered oldest first. */
-  logs(executionId: number): Promise<ExecutionLog[]>;
+  listLogs(executionId: number): Promise<ExecutionLog[]>;
 }
 
 /** Development support: wipes all data so the sample data can be loaded again. */

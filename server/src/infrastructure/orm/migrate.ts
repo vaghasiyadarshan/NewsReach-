@@ -9,7 +9,7 @@ const MIGRATIONS_DIR = path.resolve(
 );
 
 /** Applies pending `NNN_name.sql` files in order, each in its own transaction. Returns applied names. */
-export async function migrate(pool: Pool): Promise<string[]> {
+export async function runMigrations(pool: Pool): Promise<string[]> {
   await pool.query(
     `CREATE TABLE IF NOT EXISTS schema_migrations (
        name TEXT PRIMARY KEY,

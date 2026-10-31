@@ -14,7 +14,7 @@ function isNonEmptyText(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
-function words(text: string): string[] {
+function splitIntoWords(text: string): string[] {
   return text.split(/\s+/).filter(Boolean);
 }
 
@@ -32,7 +32,7 @@ function requireBody(input: JsonObject): string {
   return input.body;
 }
 
-function summaryWordCount(input: JsonObject): number {
+function readSummaryWordCount(input: JsonObject): number {
   const value = input.summary_words;
   if (value === undefined) return DEFAULT_SUMMARY_WORDS;
   if (typeof value !== 'number' || !Number.isInteger(value) || value < 1) {
@@ -48,15 +48,15 @@ function summaryWordCount(input: JsonObject): number {
 export const OPERATIONS: Record<OperationType, OperationHandler> = {
   VALIDATE_ARTICLE: (input) => {
     const { title, body } = requireText(input, 'title', 'body');
-    return { valid: true, titleLength: title.length, bodyWords: words(body).length };
+    return { valid: true, titleLength: title.length, bodyWords: splitIntoWords(body).length };
   },
 
-  COUNT_WORDS: (input) => ({ wordCount: words(requireBody(input)).length }),
+  COUNT_WORDS: (input) => ({ wordCount: splitIntoWords(requireBody(input)).length }),
 
   GENERATE_SUMMARY: (input) => {
     const body = requireBody(input);
-    const requested = summaryWordCount(input);
-    const summary = words(body).slice(0, requested);
+    const requested = readSummaryWordCount(input);
+    const summary = splitIntoWords(body).slice(0, requested);
     return { summary: summary.join(' '), summaryWords: summary.length, requestedWords: requested };
   },
 

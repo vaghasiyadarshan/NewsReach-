@@ -97,7 +97,7 @@ export class PostgresExecutionRepository implements ExecutionRepository {
     ]);
   }
 
-  async logs(executionId: number): Promise<ExecutionLog[]> {
+  async listLogs(executionId: number): Promise<ExecutionLog[]> {
     const { rows } = await this.q.query<{ id: number; execution_id: number; ts: Date; level: LogLevel; message: string }>(
       'SELECT id, execution_id, ts, level, message FROM execution_logs WHERE execution_id = $1 ORDER BY id',
       [executionId],

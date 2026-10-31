@@ -13,7 +13,7 @@ export class GetExecution {
       const execution = await repos.executions.findById(id);
       if (!execution) throw new NotFoundError(`Execution ${id} not found`);
       const [record] = await toExecutionRecords(repos, [execution]);
-      return { ...record!, logs: await repos.executions.logs(id) };
+      return { ...record!, logs: await repos.executions.listLogs(id) };
     });
   }
 }

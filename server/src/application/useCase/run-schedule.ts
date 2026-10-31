@@ -27,7 +27,7 @@ export class RunSchedule {
   async execute(input: RunScheduleInput = {}): Promise<RunResult> {
     const scheduleId = await this.resolveScheduleId(input.scheduleId);
     // One run per schedule at a time: a concurrent request waits here, then finds nothing left to do.
-    return this.lock.withLock(scheduleId, () => this.runLocked(scheduleId));
+    return this.lock.withLock(scheduleId, () => this.runWhileLocked(scheduleId));
   }
 
   private async resolveScheduleId(requested?: number): Promise<number> {
@@ -42,7 +42,7 @@ export class RunSchedule {
     });
   }
 
-  private async runLocked(scheduleId: number): Promise<RunResult> {
+  private async runWhileLocked(scheduleId: number): Promise<RunResult> {
     const { schedule, executions } = await this.uow.run(async (repos) => {
       const current = (await repos.schedules.findById(scheduleId))!;
       if (await isStale(repos, current)) {
@@ -69,7 +69,7 @@ export class RunSchedule {
 
       const badDeps = job.dependencies.filter((d) => status.get(d) === 'FAILED' || status.get(d) === 'BLOCKED');
       if (badDeps.length > 0) {
-        await this.block(execution, badDeps.map((d) => `${d} ${status.get(d)}`));
+        await this.markBlocked(execution, badDeps.map((d) => `${d} ${status.get(d)}`));
         status.set(job.id, 'BLOCKED');
         result.blocked.push(job.id);
         continue;
@@ -94,7 +94,7 @@ export class RunSchedule {
     return { ...result, schedule: view };
   }
 
-  private async block(execution: Execution, reasons: string[]): Promise<void> {
+  private async markBlocked(execution: Execution, reasons: string[]): Promise<void> {
     const message = `Blocked: dependency ${reasons.join(', ')}`;
     await this.uow.run(async (repos) => {
       await repos.executions.transition(execution.id, 'SCHEDULED', 'BLOCKED', { error: message });

@@ -38,7 +38,7 @@ export function bruteForceSchedule(jobs: readonly Job[], machines: readonly Mach
       scheduledCount: chosen.length,
       makespan: chosen.reduce((m, a) => Math.max(m, a.end), 0),
     };
-    if (isBetter(candidate, best)) best = candidate;
+    if (isBetterPlacement(candidate, best)) best = candidate;
   };
 
   const recurse = (i: number): void => {
@@ -64,7 +64,7 @@ export function bruteForceSchedule(jobs: readonly Job[], machines: readonly Mach
   return best;
 }
 
-function isBetter(a: OracleResult, b: OracleResult): boolean {
+function isBetterPlacement(a: OracleResult, b: OracleResult): boolean {
   if (a.totalPriority !== b.totalPriority) return a.totalPriority > b.totalPriority;
   if (a.scheduledCount !== b.scheduledCount) return a.scheduledCount > b.scheduledCount;
   if (a.makespan !== b.makespan) return a.makespan < b.makespan;

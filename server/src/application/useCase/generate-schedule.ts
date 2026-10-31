@@ -1,5 +1,5 @@
-import { solve } from '../helper/scheduling/solver.ts';
-import { computeFingerprint, snapshotOf } from '../helper/fingerprint.ts';
+import { findOptimalSchedule } from '../helper/scheduling/solver.ts';
+import { computeFingerprint, buildSnapshot } from '../helper/fingerprint.ts';
 import type { Clock } from '../port/clock.ts';
 import type { UnitOfWork } from '../port/repositories.ts';
 import { toScheduleView } from '../helper/schedule-views.ts';
@@ -21,8 +21,8 @@ export class GenerateSchedule {
       const jobs = await repos.jobs.list();
       const machines = await repos.machines.list();
 
-      const { stats, ...result } = solve({ jobs, machines });
-      const snapshot = snapshotOf(jobs, machines);
+      const { stats, ...result } = findOptimalSchedule({ jobs, machines });
+      const snapshot = buildSnapshot(jobs, machines);
 
       const schedule = await repos.schedules.create({
         result,

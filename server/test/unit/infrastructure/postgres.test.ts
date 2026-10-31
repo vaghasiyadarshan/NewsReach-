@@ -1,7 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { createUseCases } from '../../../src/infrastructure/di/composition.ts';
 import { SAMPLE_JOBS, SAMPLE_MACHINES } from '../../../src/application/constants/sample-data.ts';
-import { snapshotOf, computeFingerprint } from '../../../src/application/helper/fingerprint.ts';
+import { buildSnapshot, computeFingerprint } from '../../../src/application/helper/fingerprint.ts';
 import { ConflictError, InvalidTransitionError, NotFoundError } from '../../../src/application/errors/errors.ts';
 import { PostgresUnitOfWork } from '../../../src/infrastructure/repositories/unit-of-work.ts';
 import { job } from '../../fixtures/fixtures.ts';
@@ -58,7 +58,7 @@ describe('unit of work', () => {
 describe('schedule creation is all-or-nothing', () => {
   it('stores no schedule, assignments or executions when a later insert fails', async () => {
     await seed();
-    const snapshot = snapshotOf(SAMPLE_JOBS, SAMPLE_MACHINES);
+    const snapshot = buildSnapshot(SAMPLE_JOBS, SAMPLE_MACHINES);
     const draft = {
       snapshot,
       fingerprint: computeFingerprint(snapshot),

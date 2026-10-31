@@ -3,12 +3,12 @@ import type { Job } from '../../../domain/models/job.ts';
 import type { Machine } from '../../../domain/models/machine.ts';
 import type { Assignment, ScheduleResult } from '../../../domain/models/schedule.ts';
 import { compareStrings } from './compare.ts';
-import { explainUnselected } from './explain.ts';
+import { explainExcludedJobs } from './explain.ts';
 import { analyzeFeasibility } from './feasibility.ts';
 import { assertValidGraph } from './graph.ts';
 import { HORIZON, MAX_JOBS, MAX_MACHINES } from '../../constants/limits.ts';
 import { SubsetPlacer, type Placement } from './placement.ts';
-import { enumerateClosedSubsets, type Subset } from './subsets.ts';
+import { listDependencyClosedSubsets, type Subset } from './subsets.ts';
 
 export interface SolverInput {
   jobs: readonly Job[];
@@ -43,7 +43,7 @@ export function compareAssignments(a: readonly Assignment[], b: readonly Assignm
 }
 
 /** True when placement `a` beats `b`: smaller makespan, then lexicographically smaller. */
-function isBetter(a: Placement, b: Placement): boolean {
+function isBetterPlacement(a: Placement, b: Placement): boolean {
   if (a.makespan !== b.makespan) return a.makespan < b.makespan;
   return compareAssignments(a.assignments, b.assignments) < 0;
 }
@@ -66,7 +66,7 @@ function assertWithinLimits(jobs: readonly Job[], machines: readonly Machine[]):
  * Subsets are tried best-score first; the first score level that contains a schedulable subset
  * decides priority and count, and the remaining criteria are compared across that level's subsets.
  */
-export function solve(input: SolverInput): SolverOutput {
+export function findOptimalSchedule(input: SolverInput): SolverOutput {
   const startedAt = performance.now();
   const horizon = input.horizon ?? HORIZON;
   assertWithinLimits(input.jobs, input.machines);
@@ -75,7 +75,7 @@ export function solve(input: SolverInput): SolverOutput {
   const { candidates, exclusions: unschedulable } = analyzeFeasibility(input.jobs, input.machines, horizon);
   const placer = new SubsetPlacer(candidates, horizon);
   const dependencyMasks = placer.dependencyMasks();
-  const subsets = enumerateClosedSubsets(candidates, dependencyMasks);
+  const subsets = listDependencyClosedSubsets(candidates, dependencyMasks);
 
   let chosen: { subset: Subset; placement: Placement } | null = null;
   for (let from = 0; from < subsets.length && chosen === null; ) {
@@ -84,8 +84,8 @@ export function solve(input: SolverInput): SolverOutput {
     while (to < subsets.length && subsets[to]!.priority === priority && subsets[to]!.count === count) to++;
 
     for (const subset of subsets.slice(from, to)) {
-      const placement = placer.place(subset.mask);
-      if (placement && (chosen === null || isBetter(placement, chosen.placement))) {
+      const placement = placer.placeJobs(subset.mask);
+      if (placement && (chosen === null || isBetterPlacement(placement, chosen.placement))) {
         chosen = { subset, placement };
       }
     }
@@ -94,7 +94,7 @@ export function solve(input: SolverInput): SolverOutput {
   // The empty subset is always schedulable, so a choice always exists.
   const { subset, placement } = chosen!;
 
-  const unselected = explainUnselected({ candidates, dependencyMasks, subsets, placer, chosen: subset });
+  const unselected = explainExcludedJobs({ candidates, dependencyMasks, subsets, placer, chosen: subset });
 
   return {
     assignments: placement.assignments,

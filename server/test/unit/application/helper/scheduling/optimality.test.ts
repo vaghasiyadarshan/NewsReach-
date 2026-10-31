@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Job } from '../../../../../src/domain/models/job.ts';
 import type { Assignment } from '../../../../../src/domain/models/schedule.ts';
-import { solve } from '../../../../../src/application/helper/scheduling/solver.ts';
+import { findOptimalSchedule } from '../../../../../src/application/helper/scheduling/solver.ts';
 import { job, M1, M2, sampleJobs } from '../../../../fixtures/fixtures.ts';
 import { expectValidSchedule } from '../../../../fixtures/validity.ts';
 
@@ -34,7 +34,7 @@ function greedyFirstFit(jobs: readonly Job[], horizon = 12): { assignments: Assi
 describe('sample data (golden)', () => {
   it('schedules all six jobs with priority 45 and makespan 7, exactly as derived by hand', () => {
     const jobs = sampleJobs();
-    const result = solve({ jobs, machines: [M1, M2] });
+    const result = findOptimalSchedule({ jobs, machines: [M1, M2] });
 
     expect(result.assignments.map((a) => [a.jobId, a.machineId, a.start, a.end])).toEqual([
       ['J1', 'M2', 0, 2],
@@ -52,7 +52,7 @@ describe('sample data (golden)', () => {
   });
 
   it('runs well inside a second', () => {
-    const { stats } = solve({ jobs: sampleJobs(), machines: [M1, M2] });
+    const { stats } = findOptimalSchedule({ jobs: sampleJobs(), machines: [M1, M2] });
     expect(stats.elapsedMs).toBeLessThan(1000);
   });
 });
@@ -71,7 +71,7 @@ describe('optimal vs greedy', () => {
     expect(greedy.assignments.some((a) => a.jobId === 'J2')).toBe(false);
     expect(greedy.totalPriority).toBe(18);
 
-    const result = solve({ jobs, machines: [M1, M2] });
+    const result = findOptimalSchedule({ jobs, machines: [M1, M2] });
     expect(result.totalPriority).toBe(27);
     expect(result.scheduledCount).toBe(3);
     expect(result.exclusions).toEqual([]);
@@ -82,7 +82,7 @@ describe('optimal vs greedy', () => {
 
   it('never does worse than greedy on the sample data', () => {
     const jobs = sampleJobs();
-    const result = solve({ jobs, machines: [M1, M2] });
+    const result = findOptimalSchedule({ jobs, machines: [M1, M2] });
     expect(result.totalPriority).toBeGreaterThanOrEqual(greedyFirstFit(jobs).totalPriority);
   });
 });

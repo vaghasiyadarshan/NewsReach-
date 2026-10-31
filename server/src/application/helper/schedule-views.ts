@@ -1,13 +1,13 @@
 import { deriveScheduleStatus } from './execution/lifecycle.ts';
 import type { Schedule } from '../../domain/models/schedule.ts';
 import { toExecutionRecords } from './execution-records.ts';
-import { computeFingerprint, snapshotOf } from './fingerprint.ts';
+import { computeFingerprint, buildSnapshot } from './fingerprint.ts';
 import type { Repositories } from '../port/repositories.ts';
 import type { ScheduleView } from '../../domain/types/views.ts';
 
 /** True when jobs or machines no longer match what the schedule was computed from. */
 export async function isStale(repos: Repositories, schedule: Schedule): Promise<boolean> {
-  const current = snapshotOf(await repos.jobs.list(), await repos.machines.list());
+  const current = buildSnapshot(await repos.jobs.list(), await repos.machines.list());
   return computeFingerprint(current) !== schedule.fingerprint;
 }
 

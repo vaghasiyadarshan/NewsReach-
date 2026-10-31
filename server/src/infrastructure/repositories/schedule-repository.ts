@@ -71,15 +71,15 @@ export class PostgresScheduleRepository implements ScheduleRepository {
 
   async findLatest(): Promise<Schedule | null> {
     const { rows } = await this.q.query<ScheduleRow>(`SELECT ${COLUMNS} FROM schedules ORDER BY id DESC LIMIT 1`);
-    return rows[0] ? this.hydrate(rows[0]) : null;
+    return rows[0] ? this.buildScheduleWithDetails(rows[0]) : null;
   }
 
   async findById(id: number): Promise<Schedule | null> {
     const { rows } = await this.q.query<ScheduleRow>(`SELECT ${COLUMNS} FROM schedules WHERE id = $1`, [id]);
-    return rows[0] ? this.hydrate(rows[0]) : null;
+    return rows[0] ? this.buildScheduleWithDetails(rows[0]) : null;
   }
 
-  private async hydrate(row: ScheduleRow): Promise<Schedule> {
+  private async buildScheduleWithDetails(row: ScheduleRow): Promise<Schedule> {
     const assignments = await this.q.query<{ job_id: string; machine_id: string; start_slot: number; end_slot: number }>(
       `SELECT job_id, machine_id, start_slot, end_slot FROM schedule_assignments
         WHERE schedule_id = $1 ORDER BY job_id COLLATE "C"`,
