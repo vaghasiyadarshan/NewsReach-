@@ -10,6 +10,9 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+/** The Jobs panel fetches its own list on every load; these tests are about the dashboard actions. */
+const withoutJobList = (calls: string[]) => calls.filter((c) => c !== 'GET /api/jobs');
+
 const tile = (name: string) => within(screen.getByTestId(`tile-${name}`)).getByText(/^\d+$/).textContent;
 
 describe('dashboard summary and counts', () => {
@@ -82,7 +85,7 @@ describe('actions refresh the page state', () => {
     expect(await screen.findByText(/Schedule #1 generated: 6 jobs scheduled, priority 45, makespan 7/)).toBeTruthy();
     await waitFor(() => expect(tile('scheduled')).toBe('6'));
     expect(screen.getByTestId('total-priority').textContent).toBe('45');
-    expect(calls).toEqual(['GET /api/dashboard', 'POST /api/schedules/generate', 'GET /api/dashboard']);
+    expect(withoutJobList(calls)).toEqual(['GET /api/dashboard', 'POST /api/schedules/generate', 'GET /api/dashboard']);
     expect((screen.getByRole('button', { name: 'Run Schedule' }) as HTMLButtonElement).disabled).toBe(false);
   });
 
@@ -156,7 +159,7 @@ describe('actions refresh the page state', () => {
     await screen.findByText(/No schedule yet/);
 
     await userEvent.click(screen.getByRole('button', { name: 'Reset Sample Data' }));
-    expect(calls).toEqual(['GET /api/dashboard']);
+    expect(withoutJobList(calls)).toEqual(['GET /api/dashboard']);
   });
 
   it('Reset Sample Data posts and reloads when confirmed', async () => {
@@ -170,7 +173,7 @@ describe('actions refresh the page state', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Reset Sample Data' }));
     expect(await screen.findByText('Sample data loaded: 2 machines, 6 jobs.')).toBeTruthy();
-    expect(calls).toEqual(['GET /api/dashboard', 'POST /api/dev/reset-sample', 'GET /api/dashboard']);
+    expect(withoutJobList(calls)).toEqual(['GET /api/dashboard', 'POST /api/dev/reset-sample', 'GET /api/dashboard']);
   });
 
   it('reports an unreachable API instead of failing silently', async () => {

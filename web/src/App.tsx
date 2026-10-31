@@ -1,14 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, ApiError } from './api/client.ts';
+import { api, errorMessage } from './api/client.ts';
 import type { Dashboard, RunResultDto } from './api/types.ts';
 import { ActionBar, type Action } from './components/ActionBar.tsx';
 import { ExecutionTable } from './components/ExecutionTable.tsx';
+import { JobsPanel } from './components/JobsPanel.tsx';
 import { MachinesPanel } from './components/MachinesPanel.tsx';
 import { OverviewTiles } from './components/OverviewTiles.tsx';
 import { SchedulerSummary } from './components/SchedulerSummary.tsx';
-
-const messageOf = (error: unknown): string =>
-  error instanceof ApiError ? error.message : error instanceof Error ? error.message : 'Something went wrong';
 
 function describeRun(run: RunResultDto): string {
   const parts = [
@@ -31,7 +29,7 @@ export function App() {
     try {
       setDashboard(await api.dashboard());
     } catch (e) {
-      setError(messageOf(e));
+      setError(errorMessage(e));
     }
   }, []);
 
@@ -47,7 +45,7 @@ export function App() {
     try {
       setNotice(await work());
     } catch (e) {
-      setError(messageOf(e));
+      setError(errorMessage(e));
     } finally {
       await load();
       setBusy(null);
@@ -110,6 +108,15 @@ export function App() {
           <SchedulerSummary schedule={schedule} />
           <MachinesPanel machines={dashboard.machines} horizon={dashboard.horizon} />
           <ExecutionTable jobs={dashboard.jobs} />
+          <JobsPanel
+            machines={dashboard.machines.map(({ id, name, status }) => ({ id, name, status }))}
+            refreshToken={dashboard}
+            onSaved={(message) => {
+              setError(null);
+              setNotice(message);
+              void load();
+            }}
+          />
         </>
       ) : (
         !error && <p className="empty">Loading…</p>

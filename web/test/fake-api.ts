@@ -28,7 +28,9 @@ export const summary = (overrides: Partial<NonNullable<Dashboard['schedule']>> =
 type Handler = (body: unknown) => { status?: number; json: unknown };
 
 /** Replaces `fetch` with a router keyed by "METHOD /path"; returns the list of calls made. */
-export function installFakeApi(routes: Record<string, Handler>) {
+export function installFakeApi(overrides: Record<string, Handler>) {
+  // the Jobs panel loads its list on every dashboard load; most tests do not care about it
+  const routes: Record<string, Handler> = { 'GET /api/jobs': () => ({ json: [] }), ...overrides };
   const calls: string[] = [];
   vi.stubGlobal(
     'fetch',

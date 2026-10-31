@@ -7,6 +7,8 @@ export default defineConfig({
   test: { environment: 'jsdom', include: ['test/**/*.test.tsx'] },
   server: {
     port: 5173,
+    // the job form reads the list of operations from the server's own definition
+    fs: { allow: ['..'] },
     proxy: {
       '/api': process.env.API_URL ?? 'http://localhost:3000',
     },
