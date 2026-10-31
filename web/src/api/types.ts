@@ -1,6 +1,6 @@
 // API types are the server's own read models (type-only imports, so no server code is bundled).
 // JSON has no Date, so every Date becomes the ISO string it is sent as.
-import type { Machine } from '../../../server/src/domain/model/machine.ts';
+import type { Machine } from '../../../server/src/domain/models/machine.ts';
 import type {
   DashboardView,
   ExecutionDetails,
@@ -8,7 +8,7 @@ import type {
   JobView,
   RunResult,
   ScheduleView,
-} from '../../../server/src/application/views.ts';
+} from '../../../server/src/domain/types/views.ts';
 
 type Serialized<T> = T extends Date
   ? string
@@ -29,7 +29,7 @@ export type ExecutionDetailsDto = Serialized<ExecutionDetails>;
 export type JobDto = Serialized<JobView>;
 export type MachineDto = Machine;
 
-export type { JobStatus } from '../../../server/src/domain/model/execution.ts';
+export type { JobStatus } from '../../../server/src/domain/models/execution.ts';
 
 /** The error body every failed API call returns. */
 export interface ApiErrorBody {
